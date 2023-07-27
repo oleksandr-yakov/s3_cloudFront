@@ -8,17 +8,15 @@ from aws_cdk import (
 )
 import aws_cdk as cdk
 from constructs import Construct
-from config import connection_arn, branch
 
 
-class PipelineStackFront(Stack):
+class PipelineStackTestFront(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        source_bucket = s3.Bucket(self, "SourceBucket", removal_policy=cdk.RemovalPolicy.DESTROY,                       # delte s3 if stack had been deleted
-                                                            bucket_name=f"my-s3-front-{branch}-main-hu4578gf")
+        source_bucket = s3.Bucket(self, "SourceBucket", removal_policy=cdk.RemovalPolicy.DESTROY) # delte s3 if stack had been deleted
 
-        distribution = cloudfront.CloudFrontWebDistribution(self, f"MyDistributionFront-{branch}",
+        distribution = cloudfront.CloudFrontWebDistribution(self, f"MyDistributionFront->main",
                                                             origin_configs=[cloudfront.SourceConfiguration(
                                                                 s3_origin_source=cloudfront.S3OriginConfig(
                                                                     s3_bucket_source=source_bucket),
@@ -29,40 +27,39 @@ class PipelineStackFront(Stack):
 
         git_source_output = codepipeline.Artifact()
         source_action = codepipeline_actions.CodeStarConnectionsSourceAction(
-            connection_arn=connection_arn,
-            owner='fiesta-taco',
-            repo='ovsrd-trainee-front',
-            branch=branch,   # use global env var : DEV_ENV=dev && cdk deploy <name stack> --profile oyakovenko-trainee
-            action_name=f'GitHub_Source_ovsrd-trainee-front-{branch}',
+            connection_arn="arn:aws:codestar-connections:eu-central-1:423704380788:connection/2f228b5f-a776-4312-876d-72a6c7e5d4d9",
+            owner='oleksandr-yakov',
+            repo='test_front',
+            branch="main",   # use global env var : DEV_ENV=dev && cdk deploy <name stack> --profile oyakovenko-trainee
+            action_name='GitHub_Source_Test-front-',
             output=git_source_output,
             trigger_on_push=True,
         )
 
         build_action = codepipeline_actions.CodeBuildAction(
-            action_name=f'CodeBuildFront-{branch}',
-            project=codebuild.PipelineProject(self, f"BuildProjectFront-{branch}",
+            action_name=f'CodeBuildFront',
+            project=codebuild.PipelineProject(self, f"BuildProjectFront",
                                               build_spec=codebuild.BuildSpec.from_object({
                                                   "version": "0.2",
                                                   "phases": {
                                                       "install": {
-                                                          # "runtime-versions": {
-                                                          #     "nodejs": "14.17.0"
-                                                          # },
                                                           "commands": [
+                                                              "echo test ovsrd-trainee-front",
                                                               "npm install", #install depnds
                                                           ],
                                                       },
                                                       "build": {
                                                           "commands": [
-                                                              "npm  build",   ##build proj           npm run-script build
+                                                              "echo test ovsrd-trainee-front",
+                                                              "npm build",   ##build proj
                                                           ],
                                                       },
                                                   },
-                                                  "artifacts": {
-                                                      "files": [
-                                                          "dist/**/*",
-                                                      ],
-                                                  },
+                                                  # "artifacts": {
+                                                  #     "files": [
+                                                  #         "dist/**/*",
+                                                  #     ],
+                                                  # },
                                               }),
                                               ),
             input=git_source_output,
@@ -70,7 +67,7 @@ class PipelineStackFront(Stack):
         )
 
         invalidate_cloudfront_action = codepipeline_actions.CodeBuildAction(
-            action_name=f"InvalidateCloudFront-{branch}",
+            action_name="InvalidateCloudFront",
             project=codebuild.PipelineProject(
                 self, "InvalidateCloudFrontProject",
                 build_spec=codebuild.BuildSpec.from_object({
@@ -87,17 +84,17 @@ class PipelineStackFront(Stack):
             input=git_source_output,
         )
 
-        pipeline = codepipeline.Pipeline(self, f"FrontPipeline-{branch}", stages=[
+        pipeline = codepipeline.Pipeline(self, "FrontPipeline->main", stages=[
             codepipeline.StageProps(
-                stage_name=f'SourceGit-ovsrd-trainee-front-{branch}',
+                stage_name='Source',
                 actions=[source_action]
             ),
             codepipeline.StageProps(
-                stage_name=f'BuildFront-{branch}',
+                stage_name='Build',
                 actions=[build_action]
             ),
             codepipeline.StageProps(
-                stage_name=f'DeployFrontS3CloudFront-{branch}',
+                stage_name='DeployFrontS3CloudFront',
                 actions=[
                     codepipeline_actions.S3DeployAction(
                         action_name='S3Deploy',

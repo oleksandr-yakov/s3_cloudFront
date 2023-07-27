@@ -18,13 +18,13 @@ class PipelineStackDocker(Stack):
             owner='fiesta-taco',
             repo='ovsrd-trainee-back-docker',
             branch=branch,
-            action_name='GitHub_Source',
+            action_name=f'GitHub_Source-ovsrd-trainee-back-docker->{branch}',
             output=git_source_output,
         )
 
         build_action = codepipeline_actions.CodeBuildAction(
-            action_name='CodeBuild',
-            project=codebuild.PipelineProject(self, "MyBuildProject",
+            action_name=f'CodeBuildDocker->{branch}',
+            project=codebuild.PipelineProject(self, f"BuildProjectDocker->{branch}",
                                               build_spec=codebuild.BuildSpec.from_object({
                                                   "version": "0.2",
                                                   "phases": {
@@ -39,7 +39,7 @@ class PipelineStackDocker(Stack):
             input=git_source_output,
             outputs=[codepipeline.Artifact(artifact_name='output')]
         )
-        pipeline = codepipeline.Pipeline(self, "DockerPipeline", stages=[
+        pipeline = codepipeline.Pipeline(self, f"DockerPipeline->{branch}", stages=[
             codepipeline.StageProps(
                 stage_name='Source',
                 actions=[source_action]

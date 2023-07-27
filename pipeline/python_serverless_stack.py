@@ -17,13 +17,13 @@ class PipelineStackServerless(Stack):
             owner='fiesta-taco',
             repo='ovsrd-trainee-back-serverless',
             branch=branch,
-            action_name='GitHub_Source_ovsrd-trainee-back-serverless',
+            action_name=f'GitHub_Source_ovsrd-trainee-back-serverless->{branch}',
             output=git_source_output,
         )
 
         build_action = codepipeline_actions.CodeBuildAction(
-            action_name='CodeBuildServerless',
-            project=codebuild.PipelineProject(self, "MyBuildProjectServerless",
+            action_name=f'CodeBuildServerless->{branch}',
+            project=codebuild.PipelineProject(self, f"BuildProjectServerless->{branch}",
                                               build_spec=codebuild.BuildSpec.from_object({
                                                   "version": "0.2",
                                                   "phases": {
@@ -39,7 +39,7 @@ class PipelineStackServerless(Stack):
             outputs=[codepipeline.Artifact(artifact_name='output')]
         )
 
-        pipeline = codepipeline.Pipeline(self, "ServerlessPipeline", stages=[
+        pipeline = codepipeline.Pipeline(self, f"ServerlessPipeline->{branch}", stages=[
             codepipeline.StageProps(
                 stage_name='Source',
                 actions=[source_action]
