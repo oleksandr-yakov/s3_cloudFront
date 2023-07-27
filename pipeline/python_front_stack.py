@@ -54,7 +54,7 @@ class PipelineStackFront(Stack):
                                                       },
                                                       "build": {
                                                           "commands": [
-                                                              "npm  build",   ##build proj           npm run-script build
+                                                              "npm run  build",   ##build proj           npm run-script build
                                                           ],
                                                       },
                                                   },
@@ -69,7 +69,7 @@ class PipelineStackFront(Stack):
             outputs=[codepipeline.Artifact(artifact_name='output')]
         )
 
-        invalidate_cloudfront_action = codepipeline_actions.CodeBuildAction(
+        invalidate_cloudfront_action = codepipeline_actions.CodeBuildAction( #buildspec
             action_name=f"InvalidateCloudFront-{branch}",
             project=codebuild.PipelineProject(
                 self, "InvalidateCloudFrontProject",
